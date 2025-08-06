@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 .vscode/
 .idea/
+CLAUDE.md
+token_cache.bin

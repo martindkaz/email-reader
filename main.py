@@ -8,34 +8,27 @@ def main():
     print("Microsoft Graph Email Reader")
     print("=" * 40)
     
-    print("\nSelect authentication method:")
-    print("1. Device Flow (enter code on another device)")
-    print("2. Interactive (browser-based login)")
-    
-    choice = input("\nEnter your choice (1 or 2): ").strip()
-    
-    if choice == "1":
-        auth = DeviceFlowAuth()
-    elif choice == "2":
-        auth = InteractiveAuth()
-    else:
-        print("Invalid choice. Exiting.")
-        return
+    # Try interactive auth first (with caching)
+    auth = InteractiveAuth()
+    print("\nAttempting authentication (cached or interactive)...")
     
     if not auth.authenticate():
-        print("Authentication failed. Exiting.")
-        return
+        print("\nInteractive authentication failed. Trying device flow...")
+        auth = DeviceFlowAuth()
+        if not auth.authenticate():
+            print("All authentication methods failed. Exiting.")
+            return
     
     client = GraphClient(auth)
     
-    print("\nFetching recent emails...")
-    emails = client.get_recent_emails(count=5)
+    print("\nSearching for emails sent to belterra-maintenance@googlegroups.com...")
+    emails = client.search_emails_by_recipient("belterra-maintenance@googlegroups.com", count=3)
     
     if not emails:
         print("No emails found or unable to fetch emails.")
         return
     
-    print(f"\nFound {len(emails)} recent emails:\n")
+    print(f"\nFound {len(emails)} emails sent to belterra-maintenance@googlegroups.com:\n")
     
     for i, email in enumerate(emails, 1):
         formatted = client.format_email(email)

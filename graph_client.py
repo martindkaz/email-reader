@@ -27,6 +27,20 @@ class GraphClient:
             print(f"Error fetching emails: {e}")
             return []
 
+    def search_emails_by_recipient(self, recipient_email, count=3):
+        search_query = f"to:{recipient_email}"
+        url = f"{self.endpoint}/me/messages?$search=\"{search_query}\"&$top={count}"
+        url += "&$select=subject,from,receivedDateTime,bodyPreview,toRecipients"
+        
+        try:
+            data = self._make_request(url)
+            return data.get('value', [])
+        except requests.exceptions.HTTPError as e:
+            print(f"Error searching emails: {e}")
+            if hasattr(e.response, 'text'):
+                print(f"Error details: {e.response.text}")
+            return []
+
     def format_email(self, email):
         received_date = email.get('receivedDateTime', 'Unknown')
         from_email = email.get('from', {}).get('emailAddress', {})
