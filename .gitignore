@@ -5,3 +5,4 @@ __pycache__/
 .idea/
 CLAUDE.md
 token_cache.bin
+processed_emails.json

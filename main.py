@@ -2,6 +2,7 @@
 from auth import DeviceFlowAuth
 from auth_interactive import InteractiveAuth
 from graph_client import GraphClient
+from parsed_email_tracker import ParsedEmailTracker
 
 
 def main():
@@ -20,24 +21,51 @@ def main():
             return
     
     client = GraphClient(auth)
+    tracker = ParsedEmailTracker()
     
-    print("\nSearching for emails sent to belterra-maintenance@googlegroups.com...")
-    emails = client.search_emails_by_recipient("belterra-maintenance@googlegroups.com", count=3)
+    print("\nStarting interactive email exploration for belterra-maintenance@googlegroups.com...")
+    print(f"Previously processed: {tracker.get_processed_count()} emails")
+    print("Will process emails one by one, starting from most recent.\n")
     
-    if not emails:
-        print("No emails found or unable to fetch emails.")
-        return
+    next_link = None
+    email_count = 0
+    skipped_count = 0
     
-    print(f"\nFound {len(emails)} emails sent to belterra-maintenance@googlegroups.com:\n")
+    while True:
+        # Get next email
+        email, next_link = client.get_next_email("belterra-maintenance@googlegroups.com", next_link)
+        
+        if not email:
+            print("No more emails found.")
+            break
+        
+        internet_message_id = email.get('internetMessageId')
+        
+        # Check if already processed
+        if internet_message_id and tracker.is_processed(internet_message_id):
+            skipped_count += 1
+            print(f"⏭️  Skipping already processed email #{email_count + skipped_count}")
+            continue
+        
+        email_count += 1
+        print(f"\n📧 EMAIL #{email_count + skipped_count}")
+        client.display_full_email(email)
+        
+        # Mark as processed
+        if internet_message_id:
+            tracker.mark_processed(internet_message_id)
+        
+        # Ask user to continue
+        try:
+            continue_choice = input("\nContinue to next email? (y/n): ").strip().lower()
+            if continue_choice not in ['y', 'yes']:
+                print("Exiting email exploration.")
+                break
+        except KeyboardInterrupt:
+            print("\nExiting email exploration.")
+            break
     
-    for i, email in enumerate(emails, 1):
-        formatted = client.format_email(email)
-        print(f"Email {i}:")
-        print(f"  From: {formatted['from']}")
-        print(f"  Subject: {formatted['subject']}")
-        print(f"  Received: {formatted['received']}")
-        print(f"  Preview: {formatted['preview']}")
-        print("-" * 40)
+    print(f"\nCompleted exploration. Processed {email_count} new emails, skipped {skipped_count} already processed.")
 
 
 if __name__ == "__main__":

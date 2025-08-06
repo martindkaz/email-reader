@@ -41,6 +41,24 @@ class GraphClient:
                 print(f"Error details: {e.response.text}")
             return []
 
+    def get_next_email(self, recipient_email=None, next_link=None):
+        if next_link:
+            url = next_link
+        else:
+            search_query = f"to:{recipient_email}"
+            url = f"{self.endpoint}/me/messages?$search=\"{search_query}\"&$top=1"
+            url += "&$select=id,subject,from,receivedDateTime,toRecipients,uniqueBody,internetMessageId,conversationId"
+        
+        try:
+            data = self._make_request(url)
+            emails = data.get('value', [])
+            return emails[0] if emails else None, data.get('@odata.nextLink')
+        except requests.exceptions.HTTPError as e:
+            print(f"Error searching emails: {e}")
+            if hasattr(e.response, 'text'):
+                print(f"Error details: {e.response.text}")
+            return None, None
+
     def format_email(self, email):
         received_date = email.get('receivedDateTime', 'Unknown')
         from_email = email.get('from', {}).get('emailAddress', {})
@@ -55,3 +73,41 @@ class GraphClient:
             'subject': subject,
             'preview': preview[:200] + '...' if len(preview) > 200 else preview
         }
+
+    def display_full_email(self, email):
+        print("=" * 80)
+        print("EMAIL DETAILS")
+        print("=" * 80)
+        
+        # Headers
+        from_email = email.get('from', {}).get('emailAddress', {})
+        sender_name = from_email.get('name', 'Unknown')
+        sender_address = from_email.get('address', 'Unknown')
+        
+        print(f"From: {sender_name} <{sender_address}>")
+        print(f"Subject: {email.get('subject', 'No Subject')}")
+        print(f"Received: {email.get('receivedDateTime', 'Unknown')}")
+        
+        # Recipients
+        to_recipients = email.get('toRecipients', [])
+        if to_recipients:
+            to_list = []
+            for recipient in to_recipients:
+                addr = recipient.get('emailAddress', {})
+                name = addr.get('name', '')
+                address = addr.get('address', '')
+                if name:
+                    to_list.append(f"{name} <{address}>")
+                else:
+                    to_list.append(address)
+            print(f"To: {', '.join(to_list)}")
+        
+        unique_body = email.get('uniqueBody', {})
+        if unique_body and unique_body.get('content'):
+            print("\n" + "-" * 38 + " UNIQUE BODY " + "-" * 38)
+            print(unique_body.get('content', 'No unique body content'))
+        else:
+            print("\n" + "-" * 38 + " UNIQUE BODY " + "-" * 38)
+            print("No unique body content available")
+        
+        print("=" * 80)
