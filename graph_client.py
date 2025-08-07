@@ -1,4 +1,7 @@
 import requests
+import os
+import tempfile
+import base64
 from bs4 import BeautifulSoup
 from config import GRAPH_API_ENDPOINT
 
@@ -7,6 +10,7 @@ class GraphClient:
     def __init__(self, auth):
         self.auth = auth
         self.endpoint = GRAPH_API_ENDPOINT
+        self.temp_dir = None
 
     def _make_request(self, url):
         headers = {
@@ -48,7 +52,7 @@ class GraphClient:
         else:
             search_query = f"to:{recipient_email}"
             url = f"{self.endpoint}/me/messages?$search=\"{search_query}\"&$top=1"
-            url += "&$select=id,subject,from,receivedDateTime,toRecipients,uniqueBody,internetMessageId,conversationId"
+            url += "&$select=id,subject,from,receivedDateTime,toRecipients,uniqueBody,internetMessageId,conversationId,hasAttachments"
         
         try:
             data = self._make_request(url)
@@ -85,6 +89,70 @@ class GraphClient:
                 prev_empty = True
         
         return '\n'.join(cleaned_lines)
+
+    def create_temp_dir(self):
+        """Create a temporary directory for attachments"""
+        if self.temp_dir:
+            self.cleanup_temp_dir()
+        self.temp_dir = tempfile.mkdtemp(prefix="email_attachments_")
+        return self.temp_dir
+
+    def cleanup_temp_dir(self):
+        """Clean up temporary directory and all files"""
+        if self.temp_dir and os.path.exists(self.temp_dir):
+            import shutil
+            shutil.rmtree(self.temp_dir)
+            self.temp_dir = None
+
+    def get_email_attachments(self, email_id):
+        """Get attachments for a specific email"""
+        url = f"{self.endpoint}/me/messages/{email_id}/attachments"
+        try:
+            data = self._make_request(url)
+            return data.get('value', [])
+        except requests.exceptions.HTTPError as e:
+            print(f"Error fetching attachments: {e}")
+            return []
+
+    def download_attachment(self, attachment, temp_dir):
+        """Download an attachment to temporary directory"""
+        try:
+            # Handle file attachments
+            if attachment.get('@odata.type') == '#microsoft.graph.fileAttachment':
+                content_bytes = attachment.get('contentBytes')
+                if content_bytes:
+                    # Decode base64 content
+                    file_content = base64.b64decode(content_bytes)
+                    filename = attachment.get('name', 'unnamed_attachment')
+                    
+                    # Create safe filename
+                    safe_filename = "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_', '-')).rstrip()
+                    if not safe_filename:
+                        safe_filename = 'unnamed_attachment'
+                    
+                    filepath = os.path.join(temp_dir, safe_filename)
+                    
+                    # Handle filename conflicts
+                    counter = 1
+                    base_filepath = filepath
+                    while os.path.exists(filepath):
+                        name, ext = os.path.splitext(base_filepath)
+                        filepath = f"{name}_{counter}{ext}"
+                        counter += 1
+                    
+                    with open(filepath, 'wb') as f:
+                        f.write(file_content)
+                    
+                    return {
+                        'name': attachment.get('name', 'unnamed'),
+                        'size': attachment.get('size', 0),
+                        'filepath': filepath,
+                        'contentType': attachment.get('contentType', 'unknown')
+                    }
+        except Exception as e:
+            print(f"Error downloading attachment {attachment.get('name', 'unknown')}: {e}")
+        
+        return None
 
     def format_email(self, email):
         received_date = email.get('receivedDateTime', 'Unknown')
@@ -128,6 +196,39 @@ class GraphClient:
                 else:
                     to_list.append(address)
             print(f"To: {', '.join(to_list)}")
+        
+        # Handle attachments
+        if email.get('hasAttachments'):
+            print("\n" + "-" * 37 + " ATTACHMENTS " + "-" * 37)
+            attachments = self.get_email_attachments(email.get('id'))
+            
+            if attachments:
+                # Create temp directory for this email's attachments
+                temp_dir = self.create_temp_dir()
+                print(f"📎 {len(attachments)} attachment(s) found:")
+                
+                downloaded_attachments = []
+                for i, attachment in enumerate(attachments, 1):
+                    name = attachment.get('name', 'unnamed')
+                    size = attachment.get('size', 0)
+                    content_type = attachment.get('contentType', 'unknown')
+                    
+                    print(f"  {i}. {name} ({size} bytes, {content_type})")
+                    
+                    # Download the attachment
+                    downloaded = self.download_attachment(attachment, temp_dir)
+                    if downloaded:
+                        downloaded_attachments.append(downloaded)
+                        print(f"     ✓ Downloaded to: {downloaded['filepath']}")
+                    else:
+                        print(f"     ✗ Failed to download")
+                
+                if downloaded_attachments:
+                    print(f"\n💾 All attachments saved to: {temp_dir}")
+                else:
+                    print("\n❌ No attachments could be downloaded")
+            else:
+                print("No attachments found (may be inline or reference attachments)")
         
         unique_body = email.get('uniqueBody', {})
         if unique_body and unique_body.get('content'):

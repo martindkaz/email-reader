@@ -61,11 +61,17 @@ def main():
             if continue_choice not in ['y', 'yes']:
                 print("Exiting email exploration.")
                 break
+            else:
+                # Clean up attachments from current email before proceeding
+                client.cleanup_temp_dir()
         except KeyboardInterrupt:
             print("\nExiting email exploration.")
             break
     
     print(f"\nCompleted exploration. Processed {email_count} new emails, skipped {skipped_count} already processed.")
+    
+    # Final cleanup
+    client.cleanup_temp_dir()
 
 
 if __name__ == "__main__":
