@@ -57,38 +57,9 @@ def main():
         
         # Ask user to continue
         try:
-            def getch():
-                try:
-                    import msvcrt
-                    return msvcrt.getch().decode('utf-8')
-                except ImportError:
-                    try:
-                        import sys, tty, termios
-                        fd = sys.stdin.fileno()
-                        old_settings = termios.tcgetattr(fd)
-                        try:
-                            tty.raw(sys.stdin.fileno())
-                            ch = sys.stdin.read(1)
-                        finally:
-                            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-                        return ch
-                    except:
-                        # Fallback to regular input if termios doesn't work
-                        return input().strip()
-
-            print("\nContinue to next email? (y/n): ", end='', flush=True)
-            continue_choice = getch().lower()
-            
-            # Only echo if it's a single character (getch worked)
-            if len(continue_choice) == 1:
-                print(continue_choice)
-            
-            if continue_choice not in ['y', 'yes']:
-                print("Exiting email exploration.")
-                break
-            else:
-                # Clean up attachments from current email before proceeding
-                client.cleanup_temp_dir()
+            input("\nPress Enter for next email (or Ctrl+C to exit): ")
+            # Clean up attachments from current email before proceeding
+            client.cleanup_temp_dir()
         except KeyboardInterrupt:
             print("\nExiting email exploration.")
             break
