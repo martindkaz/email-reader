@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 from config import GRAPH_API_ENDPOINT
 
 
@@ -59,6 +60,32 @@ class GraphClient:
                 print(f"Error details: {e.response.text}")
             return None, None
 
+    def clean_html_content(self, html_content):
+        """Convert HTML content to clean plain text"""
+        if not html_content:
+            return "No content"
+        
+        # Parse HTML with BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Extract text with line breaks preserved
+        text = soup.get_text(separator='\n', strip=True)
+        
+        # Clean up excessive whitespace while preserving paragraph breaks
+        lines = [line.strip() for line in text.split('\n')]
+        # Remove empty lines but keep single line breaks between paragraphs
+        cleaned_lines = []
+        prev_empty = False
+        for line in lines:
+            if line:
+                cleaned_lines.append(line)
+                prev_empty = False
+            elif not prev_empty and cleaned_lines:
+                cleaned_lines.append('')
+                prev_empty = True
+        
+        return '\n'.join(cleaned_lines)
+
     def format_email(self, email):
         received_date = email.get('receivedDateTime', 'Unknown')
         from_email = email.get('from', {}).get('emailAddress', {})
@@ -105,7 +132,8 @@ class GraphClient:
         unique_body = email.get('uniqueBody', {})
         if unique_body and unique_body.get('content'):
             print("\n" + "-" * 38 + " UNIQUE BODY " + "-" * 38)
-            print(unique_body.get('content', 'No unique body content'))
+            clean_content = self.clean_html_content(unique_body.get('content', ''))
+            print(clean_content)
         else:
             print("\n" + "-" * 38 + " UNIQUE BODY " + "-" * 38)
             print("No unique body content available")
