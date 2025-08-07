@@ -52,7 +52,7 @@ class GraphClient:
         else:
             search_query = f"to:{recipient_email}"
             url = f"{self.endpoint}/me/messages?$search=\"{search_query}\"&$top=1"
-            url += "&$select=id,subject,from,receivedDateTime,toRecipients,uniqueBody,internetMessageId,conversationId,hasAttachments"
+            url += "&$select=id,subject,from,receivedDateTime,toRecipients,body,internetMessageId,conversationId,hasAttachments"
         
         try:
             data = self._make_request(url)
@@ -230,13 +230,13 @@ class GraphClient:
             else:
                 print("No attachments found (may be inline or reference attachments)")
         
-        unique_body = email.get('uniqueBody', {})
-        if unique_body and unique_body.get('content'):
-            print("\n" + "-" * 38 + " UNIQUE BODY " + "-" * 38)
-            clean_content = self.clean_html_content(unique_body.get('content', ''))
+        body = email.get('body', {})
+        if body and body.get('content'):
+            print("\n" + "-" * 40 + " BODY " + "-" * 40)
+            clean_content = self.clean_html_content(body.get('content', ''))
             print(clean_content)
         else:
-            print("\n" + "-" * 38 + " UNIQUE BODY " + "-" * 38)
-            print("No unique body content available")
+            print("\n" + "-" * 40 + " BODY " + "-" * 40)
+            print("No body content available")
         
         print("=" * 80)
