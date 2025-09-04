@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 from auth import DeviceFlowAuth
 from auth_interactive import InteractiveAuth
 from graph_client import GraphClient
@@ -6,6 +7,11 @@ from parsed_email_tracker import ParsedEmailTracker
 
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Microsoft Graph Email Reader')
+    parser.add_argument('-ignr_prev', '--ignore-previous', action='store_true',
+                        help='Ignore previously processed emails and re-process all emails')
+    args = parser.parse_args()
     print("Microsoft Graph Email Reader")
     print("=" * 40)
     
@@ -21,10 +27,17 @@ def main():
             return
     
     client = GraphClient(auth)
-    tracker = ParsedEmailTracker()
+    
+    # Initialize tracker only if not ignoring previous emails
+    tracker = None
+    if not args.ignore_previous:
+        tracker = ParsedEmailTracker()
     
     print("\nStarting interactive email exploration for belterra-maintenance@googlegroups.com...")
-    print(f"Previously processed: {tracker.get_processed_count()} emails")
+    if tracker:
+        print(f"Previously processed: {tracker.get_processed_count()} emails")
+    else:
+        print("Ignoring previously processed emails - will re-process all emails")
     print("Will process emails one by one, starting from most recent.\n")
     
     next_link = None
@@ -33,7 +46,8 @@ def main():
     
     while True:
         # Get next email
-        email, next_link = client.get_next_email("belterra-maintenance@googlegroups.com", next_link)
+        # belterra-maintenance@googlegroups.com
+        email, next_link = client.get_next_email("martin@socialcogs.net", next_link)
         
         if not email:
             print("No more emails found.")
@@ -41,8 +55,8 @@ def main():
         
         internet_message_id = email.get('internetMessageId')
         
-        # Check if already processed
-        if internet_message_id and tracker.is_processed(internet_message_id):
+        # Check if already processed (only if tracker is enabled)
+        if tracker and internet_message_id and tracker.is_processed(internet_message_id):
             skipped_count += 1
             print(f"⏭️  Skipping already processed email #{email_count + skipped_count}")
             continue
@@ -51,8 +65,8 @@ def main():
         print(f"\n📧 EMAIL #{email_count + skipped_count}")
         client.display_full_email(email)
         
-        # Mark as processed
-        if internet_message_id:
+        # Mark as processed (only if tracker is enabled)
+        if tracker and internet_message_id:
             tracker.mark_processed(internet_message_id)
         
         # Ask user to continue
@@ -64,7 +78,10 @@ def main():
             print("\nExiting email exploration.")
             break
     
-    print(f"\nCompleted exploration. Processed {email_count} new emails, skipped {skipped_count} already processed.")
+    if tracker:
+        print(f"\nCompleted exploration. Processed {email_count} new emails, skipped {skipped_count} already processed.")
+    else:
+        print(f"\nCompleted exploration. Processed {email_count} emails (ignoring previous processing status).")
     
     # Final cleanup
     client.cleanup_temp_dir()
