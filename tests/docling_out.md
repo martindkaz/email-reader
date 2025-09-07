@@ -9,6 +9,16 @@ Table 1: Versions and configuration options considered for each tested asset. * 
 
 Figure 2: Dataset categories and sample counts for documents and pages.
 
+pie chart
+
+The image is a bar chart titled “Documents per Category,” which is a type of data visualization used to compare the number of documents per category across different categories. The chart is divided into four sections: “Annual Reports,” “Spec sheets,” “Law and Regulations,” and “Pages per Category.”
+
+Each section is represented by a different color, with the “Annual Reports” section in blue, the “Spec sheets” section in red, the “Law and Regulations” section in green, and the “Pages per Category” section in yellow.
+
+The chart is divided into four quadrants, each representing a different category:
+1. “Annual Reports” (blue)
+2. “Spec sheets” (
+
 ![Image](tests/docling_out_artifacts/image_000000_d7ca5ba1c33c57eb73d5fe1260678fd8e60d0bcd17f8b45f4f024fadbbafe5c1.png)
 
 ## 5.3 Benchmarking Methodology
@@ -24,6 +34,10 @@ Table 1 provides an overview of the versions and configuration options we consid
 ## 5.4 Results
 
 Figure 3: Distribution of conversion times for all documents, ordered by number of pages in a document, on all system configurations. Every dot represents one document. Log/log scale is used to even the spacing, since both number of pages and conversion times have long-tail distributions.
+
+map
+
+The
 
 ![Image](tests/docling_out_artifacts/image_000001_8143ba06da75814e245649698094c8c1f5ef1ea7dc8070336275ae2255384729.png)
 

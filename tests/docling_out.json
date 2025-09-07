@@ -1917,7 +1917,83 @@
         },
         "uri": "tests/docling_out_artifacts/image_000000_d7ca5ba1c33c57eb73d5fe1260678fd8e60d0bcd17f8b45f4f024fadbbafe5c1.png"
       },
-      "annotations": []
+      "annotations": [
+        {
+          "kind": "classification",
+          "provenance": "DocumentPictureClassifier",
+          "predicted_classes": [
+            {
+              "class_name": "pie_chart",
+              "confidence": 0.9999926090240479
+            },
+            {
+              "class_name": "logo",
+              "confidence": 2.6436973712407053e-06
+            },
+            {
+              "class_name": "remote_sensing",
+              "confidence": 2.2752417407900793e-06
+            },
+            {
+              "class_name": "signature",
+              "confidence": 4.977792400495673e-07
+            },
+            {
+              "class_name": "screenshot",
+              "confidence": 3.9458066680708725e-07
+            },
+            {
+              "class_name": "other",
+              "confidence": 3.394148961888277e-07
+            },
+            {
+              "class_name": "icon",
+              "confidence": 2.672716732377012e-07
+            },
+            {
+              "class_name": "chemistry_molecular_structure",
+              "confidence": 2.589947598607978e-07
+            },
+            {
+              "class_name": "flow_chart",
+              "confidence": 2.0664703015427222e-07
+            },
+            {
+              "class_name": "chemistry_markush_structure",
+              "confidence": 1.1912730002450189e-07
+            },
+            {
+              "class_name": "stamp",
+              "confidence": 1.0369106462349009e-07
+            },
+            {
+              "class_name": "bar_code",
+              "confidence": 8.993195166340229e-08
+            },
+            {
+              "class_name": "bar_chart",
+              "confidence": 7.462734430419005e-08
+            },
+            {
+              "class_name": "qr_code",
+              "confidence": 4.206961889963168e-08
+            },
+            {
+              "class_name": "map",
+              "confidence": 2.9348328212108754e-08
+            },
+            {
+              "class_name": "line_chart",
+              "confidence": 1.1553978884748517e-09
+            }
+          ]
+        },
+        {
+          "kind": "description",
+          "text": "The image is a bar chart titled \u201cDocuments per Category,\u201d which is a type of data visualization used to compare the number of documents per category across different categories. The chart is divided into four sections: \u201cAnnual Reports,\u201d \u201cSpec sheets,\u201d \u201cLaw and Regulations,\u201d and \u201cPages per Category.\u201d\n\nEach section is represented by a different color, with the \u201cAnnual Reports\u201d section in blue, the \u201cSpec sheets\u201d section in red, the \u201cLaw and Regulations\u201d section in green, and the \u201cPages per Category\u201d section in yellow.\n\nThe chart is divided into four quadrants, each representing a different category:\n1. \u201cAnnual Reports\u201d (blue)\n2. \u201cSpec sheets\u201d (",
+          "provenance": "HuggingFaceTB/SmolVLM-256M-Instruct"
+        }
+      ]
     },
     {
       "self_ref": "#/pictures/1",
@@ -1999,7 +2075,83 @@
         },
         "uri": "tests/docling_out_artifacts/image_000001_8143ba06da75814e245649698094c8c1f5ef1ea7dc8070336275ae2255384729.png"
       },
-      "annotations": []
+      "annotations": [
+        {
+          "kind": "classification",
+          "provenance": "DocumentPictureClassifier",
+          "predicted_classes": [
+            {
+              "class_name": "map",
+              "confidence": 0.9989458918571472
+            },
+            {
+              "class_name": "other",
+              "confidence": 0.001031137420795858
+            },
+            {
+              "class_name": "bar_chart",
+              "confidence": 1.723347850202117e-05
+            },
+            {
+              "class_name": "remote_sensing",
+              "confidence": 2.1882972305320436e-06
+            },
+            {
+              "class_name": "line_chart",
+              "confidence": 1.985456947295461e-06
+            },
+            {
+              "class_name": "screenshot",
+              "confidence": 1.2535930409285356e-06
+            },
+            {
+              "class_name": "pie_chart",
+              "confidence": 1.7554300768551911e-07
+            },
+            {
+              "class_name": "logo",
+              "confidence": 8.020757746862728e-08
+            },
+            {
+              "class_name": "qr_code",
+              "confidence": 5.242403133820517e-08
+            },
+            {
+              "class_name": "chemistry_markush_structure",
+              "confidence": 3.482979948898901e-08
+            },
+            {
+              "class_name": "bar_code",
+              "confidence": 1.4506460921381858e-08
+            },
+            {
+              "class_name": "flow_chart",
+              "confidence": 1.3158269140944867e-08
+            },
+            {
+              "class_name": "chemistry_molecular_structure",
+              "confidence": 9.857663130219407e-09
+            },
+            {
+              "class_name": "icon",
+              "confidence": 6.806683661153556e-09
+            },
+            {
+              "class_name": "signature",
+              "confidence": 1.741820465639421e-09
+            },
+            {
+              "class_name": "stamp",
+              "confidence": 9.00252150604075e-10
+            }
+          ]
+        },
+        {
+          "kind": "description",
+          "text": "The",
+          "provenance": "HuggingFaceTB/SmolVLM-256M-Instruct"
+        }
+      ]
     }
   ],
   "tables": [

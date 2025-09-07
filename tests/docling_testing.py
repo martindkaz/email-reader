@@ -16,6 +16,8 @@ pipeline_options.generate_page_images = True  # Generate full page images
 pipeline_options.generate_picture_images = True  # Extract embedded pictures/figures
 pipeline_options.do_ocr = True  # Enable OCR if needed
 pipeline_options.do_table_structure = True  # Extract table structures
+pipeline_options.do_picture_classification = True
+pipeline_options.do_picture_description = True
 
 # Create converter with PDF format options
 converter = DocumentConverter(

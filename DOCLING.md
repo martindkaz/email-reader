@@ -1,3 +1,3 @@
+?
 - enable_remote_services=True
 - PictureDescriptionApiOptions
-- doc.save_as_json("mydoc.json", image_mode=ImageRefMode.REFERENCED)
