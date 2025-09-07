@@ -1,4 +1,7 @@
 
+- Rename display_full_email() to process_email()
+- 
+
 - how LLM friendly is DoclingDocument, vs markdown export?
 - How does a markdown export handle images?
 
