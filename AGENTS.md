@@ -1,0 +1,2 @@
+- always activate the venv in my project folder
+- address me as Kaz

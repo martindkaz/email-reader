@@ -34,6 +34,16 @@ if hasattr(result.document, 'tables'):
 if hasattr(result.document, 'pictures'):
     print(f"   Pictures: {len(result.document.pictures)}")
 
+
+
+for item, level in result.document.iterate_items(with_groups=True, traverse_pictures=True):
+    type_name = item.__class__.__name__                 # e.g., TextItem, TableItem, PictureItem, GroupItem, PageItem…
+    label = getattr(item, "label", None)                # DocItemLabel enum on many items
+    label_str = getattr(label, "name", str(label)) if label is not None else ""
+    print(f'{"  " * level}- {type_name}{f" [{label_str}]" if label_str else ""}')
+
+
+
 from docling_core.types.doc import ImageRefMode
 
 # Save as JSON with referenced images (images saved as separate files)
