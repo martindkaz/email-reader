@@ -1,5 +1,7 @@
 """Utility to convert a Markdown table into a bullet-friendly layout for LLM prompts."""
 
+import argparse
+from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
 
 TABLE_MD = """
@@ -31,7 +33,20 @@ def is_separator(line: str) -> bool:
 
 def parse_markdown_table(md_table: str) -> Tuple[List[str], List[List[str]]]:
     """Parse the Markdown table and return headers with row data."""
-    lines = [line.strip() for line in md_table.strip().splitlines() if line.strip()]
+    raw_lines = md_table.splitlines()
+    header_index = None
+
+    for idx, line in enumerate(raw_lines):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if "|" in stripped and stripped.count("|") >= 2 and not is_separator(stripped):
+            header_index = idx
+            break
+    if header_index is None:
+        raise ValueError("Could not locate a Markdown table header in the provided text.")
+
+    lines = [line.strip() for line in raw_lines[header_index:] if line.strip()]
     if len(lines) < 2:
         raise ValueError("Markdown table must include header and separator lines.")
 
@@ -59,7 +74,7 @@ def column_value_repr(header: str, value: str) -> str:
     if not header:
         return value
     if not value:
-        return header
+        return ""
     return f"{header} = {value}"
 
 
@@ -96,7 +111,24 @@ def format_as_bullets(headers: List[str], rows: List[List[str]], skip_columns: I
 
 
 def main() -> None:
-    headers, rows = parse_markdown_table(TABLE_MD)
+    parser = argparse.ArgumentParser(
+        description="Convert a Markdown table into a bullet format for LLM prompts."
+    )
+    parser.add_argument(
+        "table_path",
+        nargs="?",
+        help="Path to the Markdown file containing the table. Defaults to the inline TABLE_MD constant.",
+    )
+    args = parser.parse_args()
+
+    table_source = TABLE_MD
+    if args.table_path:
+        path = Path(args.table_path)
+        if not path.is_file():
+            raise FileNotFoundError(f"Markdown table file not found: {path}")
+        table_source = path.read_text(encoding="utf-8")
+
+    headers, rows = parse_markdown_table(table_source)
     bullets = format_as_bullets(headers, rows, SKIP_COLUMNS)
     print(bullets)
 

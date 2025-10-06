@@ -59,6 +59,13 @@ result.document.save_as_markdown(
     image_mode=ImageRefMode.REFERENCED
 )
 
+tables = result.document.tables  # list[TableItem]
+out_path = Path("table_only.md")
+with out_path.open("w", encoding="utf-8") as fh:
+    for idx, table in enumerate(tables, start=1):
+        fh.write(f"### Table {idx}\n\n")
+        fh.write(table.export_to_markdown(doc=result.document))
+        fh.write("\n\n")
 
 
 
