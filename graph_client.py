@@ -53,6 +53,8 @@ class GraphClient:
             content = " OR ".join(f"'{w}'" for w in words)
         elif mode in {"and", "or"} and len(words) == 1:
             content = f"'{words[0]}'"
+        elif mode == "single":
+            content = f"'{normalized}'"
         else:
             content = normalized
 

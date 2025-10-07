@@ -156,6 +156,8 @@ def main():
                              help='Search matching any word (single-quoted tokens joined with OR).')
     query_group.add_argument('-qPHR', '--query-phrase', dest='query_phrase',
                              help='Search for an exact phrase (wrapped in escaped double quotes).')
+    query_group.add_argument('-qDEF', '--query-single', dest='query_single',
+                             help='Search using default stemming but quoting the full input once.')
     parser.add_argument('--page-size', type=int, default=50,
                         help='Page size for search-combine output (default: 50)')
 
@@ -179,6 +181,9 @@ def main():
     elif args.query_phrase is not None:
         search_query = args.query_phrase
         match_mode = 'phrase'
+    elif args.query_single is not None:
+        search_query = args.query_single
+        match_mode = 'single'
 
     modes = []
     if args.one_by_one:
