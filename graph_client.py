@@ -2,6 +2,7 @@ import requests
 import os
 import tempfile
 import base64
+from datetime import datetime
 from bs4 import BeautifulSoup
 from config import GRAPH_API_ENDPOINT
 
@@ -169,12 +170,12 @@ class GraphClient:
         print("=" * 80)
         print("EMAIL DETAILS")
         print("=" * 80)
-        
+
         # Headers
         from_email = email.get('from', {}).get('emailAddress', {})
         sender_name = from_email.get('name', 'Unknown')
         sender_address = from_email.get('address', 'Unknown')
-        
+
         print(f"From: {sender_name} <{sender_address}>")
         print(f"Subject: {email.get('subject', 'No Subject')}")
         print(f"Received: {email.get('receivedDateTime', 'Unknown')}")
@@ -236,3 +237,56 @@ class GraphClient:
             print("No body content available")
         
         print("=" * 80)
+
+    def format_email_batch(self, emails):
+        """Format a list of messages into a combined text block sorted oldest first."""
+
+        def parse_received(received_value):
+            if not received_value:
+                return datetime.min
+            try:
+                return datetime.fromisoformat(received_value.replace('Z', '+00:00'))
+            except ValueError:
+                return datetime.min
+
+        lines = []
+        for email in sorted(emails, key=lambda msg: parse_received(msg.get('receivedDateTime'))):
+            internet_message_id = email.get('internetMessageId', 'Unknown')
+            from_email = email.get('from', {}).get('emailAddress', {})
+            sender_name = from_email.get('name', 'Unknown')
+            sender_address = from_email.get('address', 'Unknown')
+            subject = email.get('subject', 'No Subject')
+            received = email.get('receivedDateTime', 'Unknown')
+
+            to_recipients = email.get('toRecipients', [])
+            to_list = []
+            for recipient in to_recipients:
+                addr = recipient.get('emailAddress', {})
+                name = addr.get('name', '')
+                address = addr.get('address', '')
+                to_list.append(f"{name} <{address}>" if name else address)
+            to_line = ", ".join(filter(None, to_list)) or "Unknown"
+
+            body_content = email.get('body', {}).get('content', '')
+            body_text = self.clean_html_content(body_content)
+
+            lines.extend([
+                f"### EMAIL id: {internet_message_id}",
+                f"From: {sender_name} <{sender_address}>",
+                f"Subject: {subject}",
+                f"Received on: {received}",
+                f"To: {to_line}",
+                "### EMAIL BODY:",
+                body_text if body_text else "(No body content)",
+                "########################",
+                "",
+            ])
+
+        return "\n".join(lines).strip()
+
+    def search_and_combine_emails(self, query, page_size=50):
+        emails, _ = self.search_emails(query=query, page_size=page_size)
+        return self.format_email_batch(emails)
+
+    # Backwards-compatible alias for previous naming
+    render_emails_to_text = search_and_combine_emails

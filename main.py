@@ -1,90 +1,161 @@
 #!/usr/bin/env python3
 import argparse
+from typing import List
+
 from auth import DeviceFlowAuth
 from auth_interactive import InteractiveAuth
 from graph_client import GraphClient
 from parsed_email_tracker import ParsedEmailTracker
 
 
-def main():
-    # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Microsoft Graph Email Reader')
-    parser.add_argument('-ignr_prev', '--ignore-previous', action='store_true',
-                        help='Ignore previously processed emails and re-process all emails')
-    args = parser.parse_args()
+DEFAULT_SEARCH_QUERY = "to:martin@socialcogs.net"
+
+
+def authenticate_and_prepare(ignore_previous: bool):
+    """Authenticate the user and prepare shared client/tracker state."""
     print("Microsoft Graph Email Reader")
     print("=" * 40)
-    
-    # Try interactive auth first (with caching)
+
     auth = InteractiveAuth()
     print("\nAttempting authentication (cached or interactive)...")
-    
+
     if not auth.authenticate():
         print("\nInteractive authentication failed. Trying device flow...")
         auth = DeviceFlowAuth()
         if not auth.authenticate():
             print("All authentication methods failed. Exiting.")
-            return
-    
+            return None, None
+
     client = GraphClient(auth)
-    
-    # Initialize tracker only if not ignoring previous emails
-    tracker = None
-    if not args.ignore_previous:
-        tracker = ParsedEmailTracker()
+    tracker = None if ignore_previous else ParsedEmailTracker()
+    return client, tracker
+
+
+def run_one_by_one(client: GraphClient, tracker: ParsedEmailTracker, search_query: str) -> None:
+    """Interactive mode: walk emails one at a time."""
     print("\nStarting interactive email exploration.")
     if tracker:
         print(f"Previously processed: {tracker.get_processed_count()} emails")
     else:
         print("Ignoring previously processed emails - will re-process all emails")
     print("Will process emails one by one, starting from most recent.\n")
-    
+
     next_link = None
-    search_query = "to:martin@socialcogs.net"
     email_count = 0
     skipped_count = 0
 
     while True:
-        # Get next email (one at a time)
         emails, next_link = client.search_emails(query=search_query, page_size=1, next_link=next_link)
         email = emails[0] if emails else None
-        
+
         if not email:
             print("No more emails found.")
             break
-        
+
         internet_message_id = email.get('internetMessageId')
-        
-        # Check if already processed (only if tracker is enabled)
+
         if tracker and internet_message_id and tracker.is_processed(internet_message_id):
             skipped_count += 1
             print(f"⏭️  Skipping already processed email #{email_count + skipped_count}")
             continue
-        
+
         email_count += 1
         print(f"\n📧 EMAIL #{email_count + skipped_count}")
         client.display_full_email(email)
-        
-        # Mark as processed (only if tracker is enabled)
+
         if tracker and internet_message_id:
             tracker.mark_processed(internet_message_id)
-        
-        # Ask user to continue
+
         try:
             input("\nPress Enter for next email (or Ctrl+C to exit): ")
-            # Clean up attachments from current email before proceeding
             client.cleanup_temp_dir()
         except KeyboardInterrupt:
             print("\nExiting email exploration.")
             break
-    
+
     if tracker:
         print(f"\nCompleted exploration. Processed {email_count} new emails, skipped {skipped_count} already processed.")
     else:
         print(f"\nCompleted exploration. Processed {email_count} emails (ignoring previous processing status).")
-    
-    # Final cleanup
+
     client.cleanup_temp_dir()
+
+
+def run_search_combine(
+    client: GraphClient,
+    tracker: ParsedEmailTracker,
+    search_query: str,
+    page_size: int,
+) -> None:
+    """Batch mode: fetch a set of emails and print a combined summary."""
+    print("\nGenerating combined email summary...")
+
+    emails, _ = client.search_emails(query=search_query, page_size=page_size)
+    if not emails:
+        print("No emails found for the provided query.")
+        return
+
+    filtered_emails: List[dict] = []
+    skipped = 0
+    if tracker:
+        for email in emails:
+            message_id = email.get('internetMessageId')
+            if message_id and tracker.is_processed(message_id):
+                skipped += 1
+                continue
+            filtered_emails.append(email)
+    else:
+        filtered_emails = emails
+
+    if not filtered_emails:
+        print("No new emails to include in the combined output.")
+        return
+
+    combined_text = client.format_email_batch(filtered_emails)
+    print(combined_text)
+
+    if tracker:
+        for email in filtered_emails:
+            message_id = email.get('internetMessageId')
+            if message_id:
+                tracker.mark_processed(message_id)
+        print(f"\nCombined output included {len(filtered_emails)} emails (skipped {skipped} already processed).")
+    else:
+        print(f"\nCombined output included {len(filtered_emails)} emails.")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Microsoft Graph Email Reader')
+    parser.add_argument('-obo', '--one-by-one', action='store_true',
+                        help='Interactive mode that walks emails one at a time')
+    parser.add_argument('-sc', '--search-combine', action='store_true',
+                        help='Run the search-and-combine summary output')
+    parser.add_argument('-ip', '--ignore-previous', '--ignr_prev', dest='ignore_previous', action='store_true',
+                        help='Ignore previously processed emails and re-process all emails')
+    parser.add_argument('-q', '--query', default=DEFAULT_SEARCH_QUERY,
+                        help='Graph $search query string (default: to:martin@socialcogs.net)')
+    parser.add_argument('--page-size', type=int, default=50,
+                        help='Page size for search-combine output (default: 50)')
+
+    args = parser.parse_args()
+
+    client, tracker = authenticate_and_prepare(args.ignore_previous)
+    if client is None:
+        return
+
+    modes = []
+    if args.one_by_one:
+        modes.append('one_by_one')
+    if args.search_combine:
+        modes.append('search_combine')
+    if not modes:
+        modes.append('one_by_one')
+
+    for mode in modes:
+        if mode == 'one_by_one':
+            run_one_by_one(client, tracker, args.query)
+        elif mode == 'search_combine':
+            run_search_combine(client, tracker, args.query, args.page_size)
 
 
 if __name__ == "__main__":
