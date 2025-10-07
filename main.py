@@ -31,7 +31,12 @@ def authenticate_and_prepare(ignore_previous: bool):
     return client, tracker
 
 
-def run_one_by_one(client: GraphClient, tracker: ParsedEmailTracker, search_query: str) -> None:
+def run_one_by_one(
+    client: GraphClient,
+    tracker: ParsedEmailTracker,
+    search_query: str,
+    match_mode: str,
+) -> None:
     """Interactive mode: walk emails one at a time."""
     print("\nStarting interactive email exploration.")
     if tracker:
@@ -45,7 +50,12 @@ def run_one_by_one(client: GraphClient, tracker: ParsedEmailTracker, search_quer
     skipped_count = 0
 
     while True:
-        emails, next_link = client.search_emails(query=search_query, page_size=1, next_link=next_link)
+        emails, next_link = client.search_emails(
+            query=search_query,
+            page_size=1,
+            next_link=next_link,
+            match_mode=match_mode,
+        )
         email = emails[0] if emails else None
 
         if not email:
@@ -86,11 +96,16 @@ def run_search_combine(
     tracker: ParsedEmailTracker,
     search_query: str,
     page_size: int,
+    match_mode: str,
 ) -> None:
     """Batch mode: fetch a set of emails and print a combined summary."""
     print("\nGenerating combined email summary...")
 
-    emails, _ = client.search_emails(query=search_query, page_size=page_size)
+    emails, _ = client.search_emails(
+        query=search_query,
+        page_size=page_size,
+        match_mode=match_mode,
+    )
     if not emails:
         print("No emails found for the provided query.")
         return
@@ -132,8 +147,15 @@ def main():
                         help='Run the search-and-combine summary output')
     parser.add_argument('-ip', '--ignore-previous', '--ignr_prev', dest='ignore_previous', action='store_true',
                         help='Ignore previously processed emails and re-process all emails')
-    parser.add_argument('-q', '--query', default=DEFAULT_SEARCH_QUERY,
-                        help='Graph $search query string (default: to:martin@socialcogs.net)')
+    query_group = parser.add_mutually_exclusive_group()
+    query_group.add_argument('-q', '--query',
+                             help='Raw Graph $search string (default uses AND semantics).')
+    query_group.add_argument('-qAND', '--query-and', dest='query_and',
+                             help='Search requiring all words (single-quoted tokens joined with AND).')
+    query_group.add_argument('-qOR', '--query-or', dest='query_or',
+                             help='Search matching any word (single-quoted tokens joined with OR).')
+    query_group.add_argument('-qPHR', '--query-phrase', dest='query_phrase',
+                             help='Search for an exact phrase (wrapped in escaped double quotes).')
     parser.add_argument('--page-size', type=int, default=50,
                         help='Page size for search-combine output (default: 50)')
 
@@ -142,6 +164,21 @@ def main():
     client, tracker = authenticate_and_prepare(args.ignore_previous)
     if client is None:
         return
+
+    match_mode = 'raw'
+    search_query = DEFAULT_SEARCH_QUERY
+    if args.query is not None:
+        search_query = args.query
+        match_mode = 'raw'
+    elif args.query_and is not None:
+        search_query = args.query_and
+        match_mode = 'and'
+    elif args.query_or is not None:
+        search_query = args.query_or
+        match_mode = 'or'
+    elif args.query_phrase is not None:
+        search_query = args.query_phrase
+        match_mode = 'phrase'
 
     modes = []
     if args.one_by_one:
@@ -153,9 +190,9 @@ def main():
 
     for mode in modes:
         if mode == 'one_by_one':
-            run_one_by_one(client, tracker, args.query)
+            run_one_by_one(client, tracker, search_query, match_mode)
         elif mode == 'search_combine':
-            run_search_combine(client, tracker, args.query, args.page_size)
+            run_search_combine(client, tracker, search_query, args.page_size, match_mode)
 
 
 if __name__ == "__main__":

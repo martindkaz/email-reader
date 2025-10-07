@@ -36,7 +36,29 @@ class GraphClient:
         'hasAttachments',
     )
 
-    def search_emails(self, query=None, page_size=10, next_link=None):
+    def _build_search_clause(self, query: str, match_mode: str) -> str:
+        normalized = (query or "").strip()
+        if not normalized:
+            raise ValueError("Query string cannot be empty when next_link is not provided.")
+
+        mode = (match_mode or "raw").lower()
+        words = [token for token in normalized.split() if token]
+
+        if mode == "phrase":
+            inner = normalized.strip('"')
+            content = f'\\"{inner}\\"'
+        elif mode == "and" and len(words) > 1:
+            content = " AND ".join(f"'{w}'" for w in words)
+        elif mode == "or" and len(words) > 1:
+            content = " OR ".join(f"'{w}'" for w in words)
+        elif mode in {"and", "or"} and len(words) == 1:
+            content = f"'{words[0]}'"
+        else:
+            content = normalized
+
+        return f'"{content}"'
+
+    def search_emails(self, query=None, page_size=10, next_link=None, match_mode: str = "raw"):
         """Run an arbitrary `$search` query against the signed-in user's mailbox."""
         if not next_link and not query:
             raise ValueError("Either query or next_link must be provided.")
@@ -45,9 +67,10 @@ class GraphClient:
             url = next_link
         else:
             select_clause = ','.join(self.EMAIL_SELECT_FIELDS)
+            search_clause = self._build_search_clause(query, match_mode)
             url = (
                 f"{self.endpoint}/me/messages"
-                f"?$search=\"{query}\""
+                f"?$search={search_clause}"
                 f"&$top={page_size}"
                 f"&$select={select_clause}"
             )
@@ -284,8 +307,8 @@ class GraphClient:
 
         return "\n".join(lines).strip()
 
-    def search_and_combine_emails(self, query, page_size=50):
-        emails, _ = self.search_emails(query=query, page_size=page_size)
+    def search_and_combine_emails(self, query, page_size=50, match_mode: str = "raw"):
+        emails, _ = self.search_emails(query=query, page_size=page_size, match_mode=match_mode)
         return self.format_email_batch(emails)
 
     # Backwards-compatible alias for previous naming

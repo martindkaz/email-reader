@@ -1,4 +1,8 @@
 
+- separate clargs/funcs for AND and OR with words
+
+
+
 - Rename display_full_email() to process_email()
 
 - belterra-maintenance@googlegroups.com
