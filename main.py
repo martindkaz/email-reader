@@ -32,8 +32,7 @@ def main():
     tracker = None
     if not args.ignore_previous:
         tracker = ParsedEmailTracker()
-    
-    print("\nStarting interactive email exploration for belterra-maintenance@googlegroups.com...")
+    print("\nStarting interactive email exploration.")
     if tracker:
         print(f"Previously processed: {tracker.get_processed_count()} emails")
     else:
@@ -41,13 +40,14 @@ def main():
     print("Will process emails one by one, starting from most recent.\n")
     
     next_link = None
+    search_query = "to:martin@socialcogs.net"
     email_count = 0
     skipped_count = 0
-    
+
     while True:
-        # Get next email
-        # belterra-maintenance@googlegroups.com
-        email, next_link = client.get_next_email("martin@socialcogs.net", next_link)
+        # Get next email (one at a time)
+        emails, next_link = client.search_emails(query=search_query, page_size=1, next_link=next_link)
+        email = emails[0] if emails else None
         
         if not email:
             print("No more emails found.")

@@ -1,3 +1,6 @@
+- clean up args setup on nonVLM pdf converter
+- output arg for mdTable-to-bullets_converter
+
 >> https://docling-project.github.io/docling/examples/export_figures/
     - answers multiple below
     - ? md with embedded example? 

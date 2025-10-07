@@ -15,54 +15,50 @@ class GraphClient:
     def _make_request(self, url):
         headers = {
             'Authorization': f'Bearer {self.auth.get_access_token()}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'ConsistencyLevel': 'eventual',
         }
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         return response.json()
 
-    def get_recent_emails(self, count=3):
-        url = f"{self.endpoint}/me/messages?$top={count}&$orderby=receivedDateTime desc"
-        url += "&$select=subject,from,receivedDateTime,bodyPreview"
-        
-        try:
-            data = self._make_request(url)
-            return data.get('value', [])
-        except requests.exceptions.HTTPError as e:
-            print(f"Error fetching emails: {e}")
-            return []
+    EMAIL_SELECT_FIELDS = (
+        'id',
+        'subject',
+        'from',
+        'receivedDateTime',
+        'toRecipients',
+        'body',
+        'bodyPreview',
+        'internetMessageId',
+        'conversationId',
+        'hasAttachments',
+    )
 
-    def search_emails_by_recipient(self, recipient_email, count=3):
-        search_query = f"to:{recipient_email}"
-        url = f"{self.endpoint}/me/messages?$search=\"{search_query}\"&$top={count}"
-        url += "&$select=subject,from,receivedDateTime,bodyPreview,toRecipients"
-        
-        try:
-            data = self._make_request(url)
-            return data.get('value', [])
-        except requests.exceptions.HTTPError as e:
-            print(f"Error searching emails: {e}")
-            if hasattr(e.response, 'text'):
-                print(f"Error details: {e.response.text}")
-            return []
+    def search_emails(self, query=None, page_size=10, next_link=None):
+        """Run an arbitrary `$search` query against the signed-in user's mailbox."""
+        if not next_link and not query:
+            raise ValueError("Either query or next_link must be provided.")
 
-    def get_next_email(self, recipient_email=None, next_link=None):
         if next_link:
             url = next_link
         else:
-            search_query = f"to:{recipient_email}"
-            url = f"{self.endpoint}/me/messages?$search=\"{search_query}\"&$top=1"
-            url += "&$select=id,subject,from,receivedDateTime,toRecipients,body,internetMessageId,conversationId,hasAttachments"
-        
+            select_clause = ','.join(self.EMAIL_SELECT_FIELDS)
+            url = (
+                f"{self.endpoint}/me/messages"
+                f"?$search=\"{query}\""
+                f"&$top={page_size}"
+                f"&$select={select_clause}"
+            )
+
         try:
             data = self._make_request(url)
-            emails = data.get('value', [])
-            return emails[0] if emails else None, data.get('@odata.nextLink')
+            return data.get('value', []), data.get('@odata.nextLink')
         except requests.exceptions.HTTPError as e:
             print(f"Error searching emails: {e}")
             if hasattr(e.response, 'text'):
                 print(f"Error details: {e.response.text}")
-            return None, None
+            return [], None
 
     def clean_html_content(self, html_content):
         """Convert HTML content to clean plain text"""
