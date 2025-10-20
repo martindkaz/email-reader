@@ -7,6 +7,8 @@
 - add field type searches to MCP 
     - so it can filter by dates and more
 
+- clean-up files before Merge
+
 - Rename display_full_email() to process_email()
 
 - belterra-maintenance@googlegroups.com
