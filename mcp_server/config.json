@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "email-search": {
+      "command": "python",
+      "args": ["-m", "mcp_server.server"],
+      "env": {}
+    }
+  }
+}

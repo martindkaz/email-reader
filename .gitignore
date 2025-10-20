@@ -5,4 +5,5 @@ __pycache__/
 .idea/
 CLAUDE.md
 token_cache.bin
-processed_emails.json
+processed_emails.json.venv/
+.venv_old_python39/
