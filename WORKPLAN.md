@@ -1,7 +1,11 @@
 
-- separate clargs/funcs for AND and OR with words
-
-
+- test the single quotes points from the Oct19 chat.
+    - then don't need the others
+    - ask it to write up search instructions in mcp desc.
+        - that you can combine AND, OR, single for exact, examples with the field tags:, etc.
+        - so LLM can craft the query with raw mode
+- add field type searches to MCP 
+    - so it can filter by dates and more
 
 - Rename display_full_email() to process_email()
 
